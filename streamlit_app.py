@@ -14,7 +14,7 @@ cursor.execute(
     """
     CREATE TABLE IF NOT EXISTS votes (
     team_name TEXT PRIMARY KEY,
-    vote_count INTERGER DEFAULT 0
+    vote_count INTEGER DEFAULT 0
     )
 """
 )
@@ -45,7 +45,6 @@ st.title("IPL Fan Pulse :cricket: :heart_eyes:",)
 st.subheader("Vote for your Fav Team and Player :trophy: ",divider=True,text_alignment="center")
 
 col1,col2,col3 = st.columns(3)
-col4,col5,col6 = st.columns(3)
 
 with col1:
 
@@ -94,17 +93,25 @@ with col3:
     st.image("pictures/dc.jpg", width=100)
     vote_dc = st.button("Vote DC")
 
+if "voted" not in st.session_state:
+    st.session_state.voted = False
 
 def cast_vote(team):
-    cursor.execute(
-        """
-        UPDATE votes 
-        SET vote_count = vote_count + 1 
-        WHERE team_name = ? 
+    if not st.session_state.voted:
+        cursor.execute(
+            """
+            UPDATE votes 
+            SET vote_count = vote_count + 1 
+            WHERE team_name = ? 
 
-        """ , (team,)
-    )
-    conn.commit()
+            """ , (team,)
+        )
+        conn.commit()
+
+        st.session_state.voted = True
+        st.success("Vote Recorded :smile:")
+    else:
+        st.warning("Already Voted")
 
 vote_buttons = {
     "srh": vote_srh,
