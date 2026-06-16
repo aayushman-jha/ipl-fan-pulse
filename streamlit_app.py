@@ -30,6 +30,18 @@ cursor.execute(
 )
 conn.commit()
 
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS fan_wall (
+    fan_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fan_name TEXT,
+    fan_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+     
+    )
+"""
+)
+conn.commit()
 #Intitialize vote count
 
 teams = {
@@ -98,6 +110,19 @@ for player,vote in players.items():
     cursor.execute(
         "INSERT OR IGNORE INTO player_votes (player_name, vote_count) VALUES (?,?)",(player,vote)
     )
+conn.commit()
+
+cursor.execute(
+    """
+INSERT OR IGNORE INTO fan_wall (fan_id,fan_name, fan_message) VALUES
+(1,'Aayush', 'RCB fans are ready! This season feels different. ❤️'),
+(2,'Rahul', 'CSK always finds a way. The yellow army never gives up! 💛'),
+(3,'Priya', 'Mumbai Indians have the best IPL legacy. 🔵'),
+(4,'Arjun', 'The young players are making this IPL more exciting! 🔥'),
+(5,'Neha', 'Every match has a new story. That is why IPL is special! 🏏');
+
+    """
+)
 conn.commit()
 
 if "voted" not in st.session_state:
@@ -219,6 +244,24 @@ def cast_playervote(player):
 if player_voted:
     cast_playervote(fav_player)
 
+fan_message = st.text_input("Comment your message here ")
+name = st.text_input("Enter Name")
+
+if st.button("Submit Comment"):
+    if len(fan_message)==0 or len(name)==0 :
+        st.warning("Please Enter Name and Message")
+    else:
+
+        cursor.execute(
+        """
+        INSERT INTO fan_wall (fan_name, fan_message) VALUES (?,?)
+        """,(name,fan_message)
+
+         )
+        conn.commit()
+        st.success("Submitted ! Its Live on Fan Wall ! :star_struck: ")
+
+
 st.markdown("### 🏆 Live Fan Poll Results")
 
 cursor.execute(
@@ -243,5 +286,22 @@ player_df = pd.DataFrame(result, columns=["Player","Votes"])
 st.markdown("### :medal_sports: Players")
 st.dataframe(player_df,hide_index=True)
 
+
+cursor.execute(
+    """
+    SELECT fan_name,fan_message,created_at FROM fan_wall
+    ORDER BY created_at DESC
+    """
+    )
+result = cursor.fetchall()
+message_df = pd.DataFrame(result, columns=["Name","Message","Timestamp"])
+message_df["Timestamp"] = (
+    pd.to_datetime(message_df["Timestamp"])
+    .dt.tz_localize("UTC")
+    .dt.tz_convert("Asia/Kolkata")
+    .dt.strftime("%d %b %Y • %I:%M %p")
+)
+st.markdown("### :star_struck: Fan Wall")
+st.dataframe(message_df,hide_index=True)
 
 
