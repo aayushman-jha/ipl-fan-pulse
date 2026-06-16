@@ -12,8 +12,18 @@ cursor = conn.cursor()
 
 cursor.execute(
     """
-    CREATE TABLE IF NOT EXISTS votes (
+    CREATE TABLE IF NOT EXISTS team_votes (
     team_name TEXT PRIMARY KEY,
+    vote_count INTEGER DEFAULT 0
+    )
+"""
+)
+conn.commit()
+
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS player_votes (
+    player_name TEXT PRIMARY KEY,
     vote_count INTEGER DEFAULT 0
     )
 """
@@ -35,12 +45,67 @@ teams = {
     "srh": 118
 }
 
+players = {
+
+    # RCB 211
+    "Virat Kohli": 127,
+    "Rajat Patidar": 84,
+
+    # CSK 198
+    "MS Dhoni": 119,
+    "Ravindra Jadeja": 79,
+
+    # MI 210
+    "Rohit Sharma": 126,
+    "Jasprit Bumrah": 84,
+
+    # KKR 120
+    "Sunil Narine": 72,
+    "Andre Russell": 48,
+
+    # GT 89
+    "Shubman Gill": 53,
+    "Rashid Khan": 36,
+
+    # RR 134
+    "Sanju Samson": 80,
+    "Yashasvi Jaiswal": 54,
+
+    # LSG 76
+    "KL Rahul": 46,
+    "Nicholas Pooran": 30,
+
+    # DC 92
+    "Rishabh Pant": 55,
+    "Axar Patel": 37,
+
+    # PBKS 103
+    "Arshdeep Singh": 62,
+    "Shashank Singh": 41,
+
+    # SRH 118
+    "Travis Head": 71,
+    "Abhishek Sharma": 47
+}
+
 for team,vote in teams.items():
     cursor.execute(
-        "INSERT OR IGNORE INTO votes (team_name, vote_count) VALUES (?,?)",(team,vote)
+        "INSERT OR IGNORE INTO team_votes (team_name, vote_count) VALUES (?,?)",(team,vote)
     )
 conn.commit()
 
+for player,vote in players.items():
+    cursor.execute(
+        "INSERT OR IGNORE INTO player_votes (player_name, vote_count) VALUES (?,?)",(player,vote)
+    )
+conn.commit()
+
+if "voted" not in st.session_state:
+    st.session_state.voted = False
+    
+if "playerVoted" not in st.session_state:
+    st.session_state.playerVoted = False
+    
 st.title("IPL Fan Pulse :cricket: :heart_eyes:",)
 st.subheader("Vote for your Fav Team and Player :trophy: ",divider=True,text_alignment="center")
 
@@ -93,14 +158,12 @@ with col3:
     st.image("pictures/dc.jpg", width=100)
     vote_dc = st.button("Vote DC")
 
-if "voted" not in st.session_state:
-    st.session_state.voted = False
 
 def cast_vote(team):
     if not st.session_state.voted:
         cursor.execute(
             """
-            UPDATE votes 
+            UPDATE team_votes 
             SET vote_count = vote_count + 1 
             WHERE team_name = ? 
 
@@ -109,7 +172,7 @@ def cast_vote(team):
         conn.commit()
 
         st.session_state.voted = True
-        st.success("Vote Recorded :smile:")
+        st.success(f"Vote Recorded :smile: : {team}")
     else:
         st.warning("Already Voted")
 
@@ -130,17 +193,55 @@ for team, clicked in vote_buttons.items():
     if clicked:
         cast_vote(team)
 
+fav_player = st.selectbox("Tell me whose your fav player is ?",players.keys())
+player_voted = st.button("Vote Player")
+
+
+
+def cast_playervote(player):
+    if not st.session_state.playerVoted:
+        cursor.execute(
+            """
+            UPDATE  player_votes 
+            SET vote_count = vote_count + 1 
+            WHERE player_name = ? 
+
+            """ , (player,)
+        )
+        conn.commit()
+
+        st.session_state.playerVoted = True
+        st.success(f"Vote Recorded :smile: : {player}")
+        
+    else:
+        st.warning("Already Voted")
+
+if player_voted:
+    cast_playervote(fav_player)
+
+st.markdown("### 🏆 Live Fan Poll Results")
 
 cursor.execute(
     """
-    SELECT team_name,vote_count FROM votes
+    SELECT team_name,vote_count FROM team_votes
     ORDER BY vote_count DESC
     """
     )
 result = cursor.fetchall()
-df = pd.DataFrame(result, columns=["Team","Votes"])
-st.markdown("### 🏆 Live Fan Poll Results")
-st.dataframe(df,use_container_width=True)
+team_df = pd.DataFrame(result, columns=["Team","Votes"])
+st.markdown("### :medal_sports: Teams")
+st.dataframe(team_df,hide_index=True)
+
+cursor.execute(
+    """
+    SELECT player_name,vote_count FROM player_votes
+    ORDER BY vote_count DESC
+    """
+    )
+result = cursor.fetchall()
+player_df = pd.DataFrame(result, columns=["Player","Votes"])
+st.markdown("### :medal_sports: Players")
+st.dataframe(player_df,hide_index=True)
 
 
 
