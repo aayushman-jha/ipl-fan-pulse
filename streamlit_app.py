@@ -219,31 +219,36 @@ for team, clicked in vote_buttons.items():
     if clicked:
         cast_vote(team)
 
-fav_player = st.selectbox("Tell me whose your fav player is ?",players.keys())
-player_voted = st.button("Vote Player")
+if st.session_state.voted:
+
+
+    fav_player = st.selectbox("Tell me whose your fav player is ?",players.keys())
+    player_voted = st.button("Vote Player")
 
 
 
-def cast_playervote(player):
-    if not st.session_state.playerVoted:
-        cursor.execute(
-            """
-            UPDATE  player_votes 
-            SET vote_count = vote_count + 1 
-            WHERE player_name = ? 
+    def cast_playervote(player):
+        if not st.session_state.playerVoted:
+            cursor.execute(
+                """
+                UPDATE  player_votes 
+                SET vote_count = vote_count + 1 
+                WHERE player_name = ? 
 
-            """ , (player,)
-        )
-        conn.commit()
+                """ , (player,)
+            )
+            conn.commit()
 
-        st.session_state.playerVoted = True
-        st.success(f"Vote Recorded :smile: : {player}")
-        
-    else:
-        st.warning("Already Voted")
+            st.session_state.playerVoted = True
+            st.success(f"Vote Recorded :smile: : {player}")
+            
+        else:
+            st.warning("Already Voted")
 
-if player_voted:
-    cast_playervote(fav_player)
+    if player_voted:
+        cast_playervote(fav_player)
+else:
+    st.info("Vote for your team first to unlock player voting!")
 
 fan_message = st.text_input("Comment your message here ")
 name = st.text_input("Enter Name")
@@ -292,10 +297,10 @@ st.dataframe(player_df,hide_index=True)
 
 
 
-top3_players = player_df.head(5)
+top5_players = player_df.head(5)
 
 fig = px.pie(
-    top3_players,
+    top5_players,
     names="Player",
     values="Votes",
     hole=0.5,
