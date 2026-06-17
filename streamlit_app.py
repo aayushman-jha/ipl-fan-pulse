@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
+import plotly.express as px
 
 @st.cache_resource
 def get_connection():
@@ -142,7 +143,7 @@ with col1:
     st.image("pictures/hyd.png",width=100)
     vote_srh = st.button("Vote SRH") 
 
-    st.header("Gujrat Titans")
+    st.header("Gujarat Titans")
     st.image("pictures/gt.png",width=100)
     vote_gt = st.button("Vote GT")
 
@@ -275,33 +276,54 @@ team_df = pd.DataFrame(result, columns=["Team","Votes"])
 st.markdown("### :medal_sports: Teams")
 st.dataframe(team_df,hide_index=True)
 
+team_chart = team_df.set_index("Team")
+st.bar_chart(team_chart)
+
 cursor.execute(
     """
     SELECT player_name,vote_count FROM player_votes
-    ORDER BY vote_count DESC
+    ORDER BY vote_count DESC LIMIT 5
     """
     )
 result = cursor.fetchall()
 player_df = pd.DataFrame(result, columns=["Player","Votes"])
-st.markdown("### :medal_sports: Players")
+st.markdown("### :medal_sports:  Top 5 Players")
 st.dataframe(player_df,hide_index=True)
+
+
+
+top3_players = player_df.head(5)
+
+fig = px.pie(
+    top3_players,
+    names="Player",
+    values="Votes",
+    hole=0.5,
+    title="🏅 Top 5 Players — Vote Share"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+
 
 
 cursor.execute(
     """
     SELECT fan_name,fan_message,created_at FROM fan_wall
     ORDER BY created_at DESC
+    LIMIT 10
     """
     )
 result = cursor.fetchall()
 message_df = pd.DataFrame(result, columns=["Name","Message","Timestamp"])
 message_df["Timestamp"] = (
-    pd.to_datetime(message_df["Timestamp"])
-    .dt.tz_localize("UTC")
+    pd.to_datetime(message_df["Timestamp"], utc=True)
     .dt.tz_convert("Asia/Kolkata")
     .dt.strftime("%d %b %Y • %I:%M %p")
 )
 st.markdown("### :star_struck: Fan Wall")
 st.dataframe(message_df,hide_index=True)
+
+
 
 
