@@ -332,3 +332,7 @@ st.dataframe(message_df,hide_index=True)
 
 
 
+st.markdown("---")
+st.caption(":man_student: Built as a personal learning project for educational purposes. Not affiliated with or endorsed by BCCI or any IPL franchise. Team logos used for illustrative purposes only.")
+
+
